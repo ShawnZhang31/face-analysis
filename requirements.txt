@@ -4,3 +4,5 @@ dlib
 opencv-contrib-python
 torch
 torchvision
+sphinx
+sphinx-rtd-theme
