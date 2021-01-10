@@ -80,6 +80,8 @@ def checkBlinkStatus(eyeStatus, falseBlinkLimit, drowsyLimit):
     """
     global state, blinkCount, drowsy
 
+    
+
     # open state and false blink state
     if (state >= 0 and state <=falseBlinkLimit):
         # if eye is open and then stay in this state

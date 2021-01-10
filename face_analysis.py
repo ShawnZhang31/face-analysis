@@ -1,10 +1,14 @@
+from ast import dump
 import os
+import sys
+import time
 import numpy as np
 import cv2
 import dlib
 # import facelib
 import argparse
 import operator
+import time
 
 from numpy.lib.type_check import imag
 
@@ -42,6 +46,27 @@ SKIP_FRAMES = 10
 FRAME_COUNTER = 0
 # [{'box': (146, 120, 114, 114), 'emotions': {'angry': 0.22, 'disgust': 0.0, 'fear': 0.03, 'happy': 0.0, 'sad': 0.13, 'surprise': 0.0, 'neutral': 0.62}}]
 EMOTION_CN={"angry":"愤怒", "disgust": "厌恶", "fear":"害怕", "happy":"高兴", "sad":"悲伤", "surprise":"惊讶", "neutral":"自然"}
+
+def drawUnicodeText(img, text, org, color=(255, 0, 255, 0), fontpath="./res/fonts/Arial Unicode.ttf", fontsize=32):
+    """
+    draw Unicode Text on the image
+    Args:
+        img (np.array): Image will be drawn
+        text (str): Text will be drawn
+        org (tuple): Text origin point
+        color (tuple): The color of the text
+        fontpath (str): The font file path
+        fontsize (int): The size of font
+    Returns:
+        np.array, the image has been drawn text
+    """
+    assert(os.path.exists(fontpath) and fontsize > 0)
+    font = ImageFont.truetype(fontpath, fontsize)
+    img_pil = Image.fromarray(img)
+    draw = ImageDraw.Draw(img_pil)
+    draw.text(org, text, font=font, fill = color)
+    return np.array(img_pil)
+    
 
 def drawFaceRect(img, box, color=(0, 255, 0, 0)):
     """Draw Face Rect
@@ -104,6 +129,70 @@ frame_width = frame.shape[1]
 frame_channel = frame.shape[2]
 
 FACE_DOWNSAMLE_RATIO = frame_height / RESIZE_HEIGHT
+
+###########################################################
+# Calculate the FPS for initialization
+# Different computers will have relatively different speeds
+# Since all operations are on frame basis
+# We want to find how many frames correspond to the blink and drowsy limit
+
+# reading some dummy frames for adjust the sensor to the light
+frameCounter = 0
+for i in range(100):
+    frameCounter += 1
+    ret, frame = video_capter.read()
+    cv2.flip(frame, 1, frame)
+    text_org = (30, 30)
+    sub_prex = "." * (frameCounter % 6 + 1)
+    frame =  drawUnicodeText(frame, "等待摄像头自动调整"+sub_prex, text_org)
+    cv2.imshow("Initializing", frame)
+    cv2.waitKey(1)
+cv2.destroyWindow("Initializing")
+
+# calculating the params about the computer
+totalTime = 0.0
+validFrames = 0
+dummyFrames = 200
+spf = 0 #seconds per frame
+
+frameCounter = 0
+while (validFrames < dummyFrames):
+    frameCounter += 1
+    validFrames += 1
+    t = time.time()
+    ret, frame = video_capter.read()
+    cv2.flip(frame, 1, frame)
+
+    frameScaled = cv2.resize(frame, dsize=None, fx= 1.0 / FACE_DOWNSAMLE_RATIO, fy= 1.0 / FACE_DOWNSAMLE_RATIO)
+
+    faces_emotions = emotion_detector.detect_emotions(frameScaled)
+    # [{'box': (146, 120, 114, 114), 'emotions': {'angry': 0.22, 'disgust': 0.0, 'fear': 0.03, 'happy': 0.0, 'sad': 0.13, 'surprise': 0.0, 'neutral': 0.62}}]
+
+    # print(faces_emotions)
+
+    timeFaces = time.time() - t
+    # if face not detected then dont add this time to the calculation
+    if len(faces_emotions) == 0:
+        validFrames -= 1
+    else:
+        totalTime += timeFaces
+
+    text_org = (30, 30)
+    sub_prex = "." * (frameCounter % 6 + 1)
+    frame =  drawUnicodeText(frame, "计算电脑相关的参数"+sub_prex, text_org, color=(0, 255, 255, 0))
+    cv2.imshow("Initializing", frame)
+    if cv2.waitKey(1) & 0xFF == 27:
+            sys.exit()
+
+cv2.destroyWindow("Initializing")
+
+spf = totalTime/dummyFrames
+print("Current SPF (seconds per frame) is {:.2f} ms".format(spf*1000))
+
+drowsyLimit = drowsyTime/spf
+falseBlinkLimit = blinkTime/spf
+print ("drowsyLimit {} ( {:.2f} ms) ,  False blink limit {} ( {:.2f} ms) ".format(drowsyLimit, drowsyLimit*spf*1000, falseBlinkLimit, (falseBlinkLimit+1)*spf*1000))
+
 
 while (True):
     # Capture frame-by-frame
