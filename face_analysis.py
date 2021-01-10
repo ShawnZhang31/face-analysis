@@ -6,8 +6,11 @@ import dlib
 import argparse
 import operator
 
+from numpy.lib.type_check import imag
+
 from utils import cv_ex
 from fer import FER
+from PIL import ImageFont, ImageDraw, Image
 
 predictor_path = "./models/shape_predictor_68_face_landmarks.dat"
 face_detector = dlib.get_frontal_face_detector()
@@ -37,6 +40,8 @@ FACE_DOWNSAMLE_RATIO = 1.0
 
 SKIP_FRAMES = 10
 FRAME_COUNTER = 0
+# [{'box': (146, 120, 114, 114), 'emotions': {'angry': 0.22, 'disgust': 0.0, 'fear': 0.03, 'happy': 0.0, 'sad': 0.13, 'surprise': 0.0, 'neutral': 0.62}}]
+EMOTION_CN={"angry":"愤怒", "disgust": "厌恶", "fear":"害怕", "happy":"高兴", "sad":"悲伤", "surprise":"惊讶", "neutral":"自然"}
 
 def drawFaceRect(img, box, color=(0, 255, 0, 0)):
     """Draw Face Rect
@@ -64,21 +69,34 @@ def drawFaceEmotions(img, box, emotions , color=(0, 255, 0, 0), highlight=(0, 0,
     point = (box[2], box[1])
     fontFace = cv2.FONT_HERSHEY_COMPLEX
     fontScale = 0.6
-    space = 20
+    space = 30
     count = 0
     # dict(sorted(x.items(), key=lambda item: item[1]))
     sorted_emotions = sorted(emotions.items(), key=operator.itemgetter(1), reverse=True)
     # print(sorted_emotions)
+    fontpath = "./res/fonts/Arial Unicode.ttf"
+    font = ImageFont.truetype(fontpath, 24)
+    img_pil = Image.fromarray(img)
     for (key, value) in emotions.items():
         textColor = color
         if value == sorted_emotions[0][1]:
             textColor = highlight
-        cv2.putText(img, key + ": " + str(value), (point[0]+5, point[1]+ 10 + count*space), fontFace, fontScale, textColor)
-        count += 1
+        
+        emotion_str = EMOTION_CN[key] + ": " + str(value)
+        org = (point[0]+5, point[1]+ 10 + count*space)
+        
+        # cv2.putText(img, emotion_str, org, fontFace, fontScale, textColor)
 
-def drawFaceLandmarks(img, shape, color=(0, 255, 0, 0)):
-    for p in shape.parts():
-        cv2.circle(img, (p.x, p.y), 1, color)
+        draw = ImageDraw.Draw(img_pil)
+        draw.text(org, emotion_str, font=font, fill = textColor)
+        count += 1
+    
+    img = np.array(img_pil, copy=True)
+    return img
+
+def drawFaceLandmarks(img, landmarks, color=(0, 255, 0, 0)):
+    for p in landmarks:
+        cv2.circle(img, p, 1, color)
 
 ret, frame = video_capter.read()
 frame_height = frame.shape[0]
@@ -101,17 +119,21 @@ while (True):
                 int(box[1]*FACE_DOWNSAMLE_RATIO),
                 int((box[0]+box[2])*FACE_DOWNSAMLE_RATIO),
                 int((box[1]+box[3])*FACE_DOWNSAMLE_RATIO)]
-        # faceImg = frameScaled[box[0]:box[0]+box[2], box[1]:box[1]+box[3]]
+
         faceImgGray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
         faceRect = dlib.rectangle(int(box[0]), int(box[1]), int(box[2]), int(box[3]))
         shape = predictor(faceImgGray, faceRect)
 
-        drawFaceLandmarks(frame, shape)
+        # face landmarks
+        landmarks = []
+        [landmarks.append((p.x, p.y)) for p in shape.parts()]
+
+        drawFaceLandmarks(frame, landmarks)
 
         drawFaceRect(frame, box)
         emotions = face['emotions']
-        drawFaceEmotions(frame, box, emotions)
+        frame = drawFaceEmotions(frame, box, emotions)
 
 
 
