@@ -1,8 +1,11 @@
 numpy
 matplotlib
 dlib
-opencv-contrib-python
+opencv-python
 torch
 torchvision
 sphinx
 sphinx-rtd-theme
+scikit-learn
+scikit-image
+Pillow

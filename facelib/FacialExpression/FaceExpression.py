@@ -31,7 +31,8 @@ class EmotionDetector:
         else:
             exit('EmotionDetector: Network does not support!! \n just(resnet34, densnet121)')
 
-        self.model.load_state_dict(torch.load(weight_path))
+        # self.model.load_state_dict(torch.load(weight_path))
+        self.model.load_state_dict(torch.load(weight_path, map_location=torch.device(device)))
         self.model.to(device).eval()
 
 
