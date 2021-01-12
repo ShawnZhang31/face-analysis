@@ -133,3 +133,7 @@ dmypy.json
 models/*
 !/models/.gitkeep
 
+res/faces/*
+!res/faces/faces.yaml
+
+

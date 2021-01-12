@@ -2,6 +2,7 @@ from ast import dump
 import os
 import sys
 import time
+from face_recognition.api import face_encodings, face_locations
 import numpy as np
 import cv2
 import dlib
@@ -15,6 +16,37 @@ from numpy.lib.type_check import imag
 from utils import cv_ex
 from fer import FER
 from PIL import ImageFont, ImageDraw, Image
+import yaml
+import face_recognition
+
+faces_configs_path = "./res/faces"
+face_configs_file = "faces.yaml"
+
+# load the known faces yaml config file
+with open(os.path.join(faces_configs_path, face_configs_file), 'r') as f:
+    faces_known = yaml.load(f, Loader=yaml.SafeLoader)
+
+known_face_encodings = [] # known face feature vectors
+known_face_names = [] # known face names
+
+for face in faces_known:
+    face_name = face['name']
+    images = face['images']
+    for image_name in images:
+        image_path = os.path.join(faces_configs_path, image_name)
+        if os.path.exists(image_path):
+            face_image = face_recognition.load_image_file(image_path)
+            face_encoding = face_recognition.face_encodings(face_image)[0]
+
+            
+            # save the face feature vectors and names for later face comparing
+            known_face_encodings.append(face_encoding)
+            known_face_names.append(face_name)
+        else:
+            print("can't find the file: {}, the program will be exit!".format(image_path))
+            sys.exit(1)
+
+# print(known_face_encodings)
 
 predictor_path = "./models/shape_predictor_68_face_landmarks.dat"
 face_detector = dlib.get_frontal_face_detector()
@@ -152,7 +184,7 @@ cv2.destroyWindow("Initializing")
 # calculating the params about the computer
 totalTime = 0.0
 validFrames = 0
-dummyFrames = 200
+dummyFrames = 10
 spf = 0 #seconds per frame
 
 frameCounter = 0
@@ -178,8 +210,8 @@ while (validFrames < dummyFrames):
         totalTime += timeFaces
 
     text_org = (30, 30)
-    sub_prex = "." * (frameCounter % 6 + 1)
-    frame =  drawUnicodeText(frame, "计算电脑相关的参数"+sub_prex, text_org, color=(0, 255, 255, 0))
+    # sub_prex = "." * (frameCounter % 6 + 1)
+    frame =  drawUnicodeText(frame, "计算电脑相关的参数{:.2f}%".format((validFrames/dummyFrames)*100), text_org, color=(0, 255, 255, 0))
     cv2.imshow("Initializing", frame)
     if cv2.waitKey(1) & 0xFF == 27:
             sys.exit()
@@ -189,10 +221,12 @@ cv2.destroyWindow("Initializing")
 spf = totalTime/dummyFrames
 print("Current SPF (seconds per frame) is {:.2f} ms".format(spf*1000))
 
-drowsyLimit = drowsyTime/spf
-falseBlinkLimit = blinkTime/spf
-print ("drowsyLimit {} ( {:.2f} ms) ,  False blink limit {} ( {:.2f} ms) ".format(drowsyLimit, drowsyLimit*spf*1000, falseBlinkLimit, (falseBlinkLimit+1)*spf*1000))
+# drowsyLimit = drowsyTime/spf
+# falseBlinkLimit = blinkTime/spf
+# print ("drowsyLimit {} ( {:.2f} ms) ,  False blink limit {} ( {:.2f} ms) ".format(drowsyLimit, drowsyLimit*spf*1000, falseBlinkLimit, (falseBlinkLimit+1)*spf*1000))
 
+# unknown face counter
+unknown_face_counter = 1
 
 while (True):
     # Capture frame-by-frame
@@ -202,12 +236,54 @@ while (True):
     frameScaled = cv2.resize(frame, dsize=None, fx= 1.0 / FACE_DOWNSAMLE_RATIO, fy= 1.0 / FACE_DOWNSAMLE_RATIO)
     faces_emotions = emotion_detector.detect_emotions(frameScaled)
     # [{'box': (146, 120, 114, 114), 'emotions': {'angry': 0.22, 'disgust': 0.0, 'fear': 0.03, 'happy': 0.0, 'sad': 0.13, 'surprise': 0.0, 'neutral': 0.62}}]
-    for face in faces_emotions:
-        box = face['box']
+    
+    # convert for face recognition
+    frameScaled_rgb = frameScaled[:, :, ::-1]
+    # face_locations = face_recognition.face_locations(frameScaled_rgb) #(top, right, bottom, left)
+
+    # print(faces_emotions)
+    # print(face_locations)
+
+    # get all face encodings once time for saving time
+    face_detected_locations = []
+    for _rect in faces_emotions:
+        box = _rect['box'] #(left, top, width, height)
+        # we must convert the rect to (top, right, bottom, left)
+        face_detected_locations.append((int(box[1]), int(box[0]+box[2]), int(box[1]+box[3]), int(box[0])))
+
+    detected_face_encodings = face_recognition.face_encodings(frameScaled_rgb, face_detected_locations)
+    # print(len(detected_face_encodings))
+
+    for idx, face in enumerate(faces_emotions):
+        # face recognition
+        # see if the face is a match for the known faces
+        matches = face_recognition.compare_faces(known_face_encodings, detected_face_encodings[idx], 0.4)
+        face_name = "未知"
+
+        # print("{} - {}".format(idx, matches))
+        # print(known_face_names)
+
+        if True in matches:
+            first_match_index = matches.index(True)
+            face_name = known_face_names[first_match_index]
+        else:
+            face_name = "未知-" + str(unknown_face_counter)
+            known_face_encodings.append(detected_face_encodings[idx])
+            known_face_names.append(face_name)
+            unknown_face_counter += 1
+
+
+        # print(name)
+
+        box = face['box'] #(left, top, width, height)
         box = [int(box[0]*FACE_DOWNSAMLE_RATIO),
                 int(box[1]*FACE_DOWNSAMLE_RATIO),
                 int((box[0]+box[2])*FACE_DOWNSAMLE_RATIO),
                 int((box[1]+box[3])*FACE_DOWNSAMLE_RATIO)]
+
+
+        # cv2.circle(frame, (box[0], box[1]), 5, (255, 0, 0)) # left-top
+        # cv2.circle(frame, (box[2], box[3]), 5, (0, 255, 0)) # right-bottom
 
         faceImgGray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
@@ -223,6 +299,9 @@ while (True):
         drawFaceRect(frame, box)
         emotions = face['emotions']
         frame = drawFaceEmotions(frame, box, emotions)
+
+        # draw face name
+        frame = drawUnicodeText(frame, face_name, (box[0], box[1]), color=(0, 255, 0, 0))
 
 
 

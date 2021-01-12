@@ -1,9 +1,14 @@
-- face1:
+- face: face1
   name: 张晓民
   images:
-    - zhangxiamin/zhangxiaomin-1.jpg
+    - zhangxiaomin/zhangxiaomin-1.jpg
 
-- face2:
-  name: 张嘉欣
+- face: face2
+  name: 张磊
   images:
-    - 
+    - zhanglei/zhanglei-1.png
+
+- face: face3
+  name: 张小咩
+  images:
+    - zhangxiaomie/test.png
