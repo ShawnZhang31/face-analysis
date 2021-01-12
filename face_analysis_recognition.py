@@ -102,8 +102,6 @@ def drawFaceEmotions(img, box, emotions , color=(0, 255, 0, 0), highlight=(0, 0,
     fontpath = "./res/fonts/Arial Unicode.ttf"
     font = ImageFont.truetype(fontpath, 24)
     img_pil = Image.fromarray(img)
-    draw = ImageDraw.Draw(img_pil)
-    draw.text((box[0], box[1]-20), "!!!打瞌睡!!!", font=font, fill=(0, 0, 255, 0))
     for (key, value) in emotions.items():
         textColor = color
         if value == sorted_emotions[0][1]:
@@ -114,7 +112,7 @@ def drawFaceEmotions(img, box, emotions , color=(0, 255, 0, 0), highlight=(0, 0,
         
         # cv2.putText(img, emotion_str, org, fontFace, fontScale, textColor)
 
-        
+        draw = ImageDraw.Draw(img_pil)
         draw.text(org, emotion_str, font=font, fill = textColor)
         count += 1
     
@@ -154,7 +152,7 @@ cv2.destroyWindow("Initializing")
 # calculating the params about the computer
 totalTime = 0.0
 validFrames = 0
-dummyFrames = 30
+dummyFrames = 200
 spf = 0 #seconds per frame
 
 frameCounter = 0
@@ -191,9 +189,9 @@ cv2.destroyWindow("Initializing")
 spf = totalTime/dummyFrames
 print("Current SPF (seconds per frame) is {:.2f} ms".format(spf*1000))
 
-# drowsyLimit = drowsyTime/spf
-# falseBlinkLimit = blinkTime/spf
-# print ("drowsyLimit {} ( {:.2f} ms) ,  False blink limit {} ( {:.2f} ms) ".format(drowsyLimit, drowsyLimit*spf*1000, falseBlinkLimit, (falseBlinkLimit+1)*spf*1000))
+drowsyLimit = drowsyTime/spf
+falseBlinkLimit = blinkTime/spf
+print ("drowsyLimit {} ( {:.2f} ms) ,  False blink limit {} ( {:.2f} ms) ".format(drowsyLimit, drowsyLimit*spf*1000, falseBlinkLimit, (falseBlinkLimit+1)*spf*1000))
 
 
 while (True):
