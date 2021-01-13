@@ -184,7 +184,7 @@ cv2.destroyWindow("Initializing")
 # calculating the params about the computer
 totalTime = 0.0
 validFrames = 0
-dummyFrames = 10
+dummyFrames = 100
 spf = 0 #seconds per frame
 
 frameCounter = 0

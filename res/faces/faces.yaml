@@ -12,3 +12,8 @@
   name: 张小咩
   images:
     - zhangxiaomie/test.png
+
+- face: face4
+  name: 肖忠良
+  images:
+    - xiaozhongliang/xiaozhongliang.png
