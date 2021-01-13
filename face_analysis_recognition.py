@@ -14,6 +14,7 @@ import time
 from numpy.lib.type_check import imag
 
 from utils import cv_ex
+from utils.cv_ex import BlinkDrowyCheck
 from fer import FER
 from PIL import ImageFont, ImageDraw, Image
 import yaml
@@ -225,6 +226,12 @@ print("Current SPF (seconds per frame) is {:.2f} ms".format(spf*1000))
 # falseBlinkLimit = blinkTime/spf
 # print ("drowsyLimit {} ( {:.2f} ms) ,  False blink limit {} ( {:.2f} ms) ".format(drowsyLimit, drowsyLimit*spf*1000, falseBlinkLimit, (falseBlinkLimit+1)*spf*1000))
 
+# create the blinkdrowychecker array
+known_face_blinkdrowy_status = []
+for face_name in known_face_names:
+    blinkchecker = BlinkDrowyCheck(spf=spf)
+    known_face_blinkdrowy_status.append(blinkchecker)
+
 # unknown face counter
 unknown_face_counter = 1
 
@@ -238,7 +245,8 @@ while (True):
     # [{'box': (146, 120, 114, 114), 'emotions': {'angry': 0.22, 'disgust': 0.0, 'fear': 0.03, 'happy': 0.0, 'sad': 0.13, 'surprise': 0.0, 'neutral': 0.62}}]
     
     # convert for face recognition
-    frameScaled_rgb = frameScaled[:, :, ::-1]
+    # frameScaled_rgb = frameScaled[:, :, ::-1]
+    frameScaled_rgb = frame[:, :, ::-1]
     # face_locations = face_recognition.face_locations(frameScaled_rgb) #(top, right, bottom, left)
 
     # print(faces_emotions)
@@ -249,7 +257,12 @@ while (True):
     for _rect in faces_emotions:
         box = _rect['box'] #(left, top, width, height)
         # we must convert the rect to (top, right, bottom, left)
-        face_detected_locations.append((int(box[1]), int(box[0]+box[2]), int(box[1]+box[3]), int(box[0])))
+        # FACE_DOWNSAMLE_RATIO
+        # face_detected_locations.append((int(box[1]), int(box[0]+box[2]), int(box[1]+box[3]), int(box[0])))
+        face_detected_locations.append((int(box[1]*FACE_DOWNSAMLE_RATIO),
+                                        int((box[0]+box[2])*FACE_DOWNSAMLE_RATIO),
+                                        int((box[1]+box[3])*FACE_DOWNSAMLE_RATIO),
+                                        int(box[0]*FACE_DOWNSAMLE_RATIO)))
 
     detected_face_encodings = face_recognition.face_encodings(frameScaled_rgb, face_detected_locations)
     # print(len(detected_face_encodings))
@@ -268,8 +281,8 @@ while (True):
             face_name = known_face_names[first_match_index]
         else:
             face_name = "未知-" + str(unknown_face_counter)
-            known_face_encodings.append(detected_face_encodings[idx])
-            known_face_names.append(face_name)
+            # known_face_encodings.append(detected_face_encodings[idx])
+            # known_face_names.append(face_name)
             unknown_face_counter += 1
 
 
@@ -294,24 +307,39 @@ while (True):
         landmarks = []
         [landmarks.append((p.x, p.y)) for p in shape.parts()]
 
+        # check blink drowy status
+        blinkchecker:BlinkDrowyCheck = known_face_blinkdrowy_status[idx]
+        blinkchecker.check(frame, landmarks)
+
+        # if the drowsy is True, draw the face rect with red rect, else green rect
+        if blinkchecker.drowsy:
+            drawFaceRect(frame, box, (0, 0, 255, 0))
+            frame = drawUnicodeText(frame, "!!!检测到打瞌睡!!!", (box[0], box[1]+32), color=(0, 0, 255, 0))
+        else:
+            drawFaceRect(frame, box)
+        
+
         drawFaceLandmarks(frame, landmarks)
 
-        drawFaceRect(frame, box)
         emotions = face['emotions']
         frame = drawFaceEmotions(frame, box, emotions)
 
         # draw face name
         frame = drawUnicodeText(frame, face_name, (box[0], box[1]), color=(0, 255, 0, 0))
 
-
-
     # boxes, sorces, landmarks = face_detector.detect_faces(frame)
     # faces, boxes, scores, landmarks = face_detector.detect_align(frame)
     # list_of_emotions, probab = emotion_detector.detect_emotion(faces)
     # print(list_of_emotions)
 
+    drowsy_array = []
+    [drowsy_array.append(blinkcheck.drowsy) for blinkcheck in known_face_blinkdrowy_status]
+    print(drowsy_array)
+
     # Display the resulting frame
     cv2.imshow('frame', frame)
+
+    # print(known_face_names)
 
     # Break the Loop
     k = cv2.waitKey(1)

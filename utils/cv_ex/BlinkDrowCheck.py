@@ -1,24 +1,23 @@
 import time
 import sys
 
-from numpy.core.records import array
-from utils.cv_ex.blinkcheck import checkBlinkStatus, checkEyeStatus
 import cv2
 import numpy as np
 from abc import ABC
 
 class BlinkDrowyCheck(ABC):
-    def __init__(self, falseBlinkLimit:int, drowsyLimit:int, blinkCount:int = 0, drowsy:int = 0, state:int = 0, blinkTime:float = 0.2, drowsyTime:float = 1.0, eyeClosedThresh:float = 0.33, leftEyeIndex:array = [36, 37, 38, 39, 40, 41], rightEyeIndex:array = [42, 43, 44, 45, 46, 47]):
+    def __init__(self, spf:float = 1.0, blinkCount:int = 0, drowsy:int = 0, state:int = 0, blinkTime:float = 0.1, drowsyTime:float = 0.5, eyeClosedThresh:float = 0.33, leftEyeIndex = [36, 37, 38, 39, 40, 41], rightEyeIndex = [42, 43, 44, 45, 46, 47]):
         """
         docstring
         """
-        self.falseBlinkLimit = falseBlinkLimit
-        self.drowsyLimit = drowsyLimit
+        self.spf = spf
         self.blinkCount = blinkCount
         self.drowsy = drowsy
         self.state = state
         self.blinkTime = blinkTime
         self.drowsyTime = drowsyTime
+        self.falseBlinkLimit = self.blinkTime/self.spf
+        self.drowsyLimit = self.drowsyTime/self.spf
         self.eyeClosedThresh = eyeClosedThresh
         self.leftEyeIndex = leftEyeIndex
         self.rightEyeIndex = rightEyeIndex
@@ -98,5 +97,5 @@ class BlinkDrowyCheck(ABC):
         """
         docstring
         """
-        eyeStatus = checkEyeStatus(frame, landmarks, eyeClosedThresh= self.eyeClosedThresh)
-        checkBlinkStatus(eyeStatus)
+        eyeStatus = self.checkEyeStatus(frame, landmarks, eyeClosedThresh= self.eyeClosedThresh)
+        self.checkBlinkStatus(eyeStatus)
