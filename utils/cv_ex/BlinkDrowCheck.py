@@ -6,7 +6,7 @@ import numpy as np
 from abc import ABC
 
 class BlinkDrowyCheck(ABC):
-    def __init__(self, spf:float = 1.0, blinkCount:int = 0, drowsy:int = 0, state:int = 0, blinkTime:float = 0.1, drowsyTime:float = 0.5, eyeClosedThresh:float = 0.33, leftEyeIndex = [36, 37, 38, 39, 40, 41], rightEyeIndex = [42, 43, 44, 45, 46, 47]):
+    def __init__(self, spf:float = 1.0, blinkCount:int = 0, drowsy:int = 0, state:int = 0, blinkTime:float = 0.2, drowsyTime:float = 1.0, eyeClosedThresh:float = 0.33, leftEyeIndex = [36, 37, 38, 39, 40, 41], rightEyeIndex = [42, 43, 44, 45, 46, 47]):
         """
         docstring
         """

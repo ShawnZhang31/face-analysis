@@ -75,8 +75,6 @@ RESIZE_WIDTH = 320
 
 FACE_DOWNSAMLE_RATIO = 1.0
 
-SKIP_FRAMES = 10
-FRAME_COUNTER = 0
 # [{'box': (146, 120, 114, 114), 'emotions': {'angry': 0.22, 'disgust': 0.0, 'fear': 0.03, 'happy': 0.0, 'sad': 0.13, 'surprise': 0.0, 'neutral': 0.62}}]
 EMOTION_CN={"angry":"愤怒", "disgust": "厌恶", "fear":"害怕", "happy":"高兴", "sad":"悲伤", "surprise":"惊讶", "neutral":"自然"}
 
@@ -185,7 +183,7 @@ cv2.destroyWindow("Initializing")
 # calculating the params about the computer
 totalTime = 0.0
 validFrames = 0
-dummyFrames = 100
+dummyFrames = 50
 spf = 0 #seconds per frame
 
 frameCounter = 0
@@ -212,7 +210,7 @@ while (validFrames < dummyFrames):
 
     text_org = (30, 30)
     # sub_prex = "." * (frameCounter % 6 + 1)
-    frame =  drawUnicodeText(frame, "计算电脑相关的参数{:.2f}%".format((validFrames/dummyFrames)*100), text_org, color=(0, 255, 255, 0))
+    frame =  drawUnicodeText(frame, "正在统计计算机算力性能{}%".format(int((validFrames/dummyFrames)*100)), text_org, color=(0, 255, 255, 0))
     cv2.imshow("Initializing", frame)
     if cv2.waitKey(1) & 0xFF == 27:
             sys.exit()
@@ -235,14 +233,22 @@ for face_name in known_face_names:
 # unknown face counter
 unknown_face_counter = 1
 
+FRAMES_COUNTS = 0
+SKIP_FRAMES = 2
+
+frameScaled = None
+faces_emotions = None
 while (True):
     # Capture frame-by-frame
     ret, frame = video_capter.read()
     cv2.flip(frame, 1, frame)
 
-    frameScaled = cv2.resize(frame, dsize=None, fx= 1.0 / FACE_DOWNSAMLE_RATIO, fy= 1.0 / FACE_DOWNSAMLE_RATIO)
-    faces_emotions = emotion_detector.detect_emotions(frameScaled)
-    # [{'box': (146, 120, 114, 114), 'emotions': {'angry': 0.22, 'disgust': 0.0, 'fear': 0.03, 'happy': 0.0, 'sad': 0.13, 'surprise': 0.0, 'neutral': 0.62}}]
+    
+
+    if FRAMES_COUNTS % SKIP_FRAMES == 0:
+        frameScaled = cv2.resize(frame, dsize=None, fx= 1.0 / FACE_DOWNSAMLE_RATIO, fy= 1.0 / FACE_DOWNSAMLE_RATIO)
+        faces_emotions = emotion_detector.detect_emotions(frameScaled)
+        # [{'box': (146, 120, 114, 114), 'emotions': {'angry': 0.22, 'disgust': 0.0, 'fear': 0.03, 'happy': 0.0, 'sad': 0.13, 'surprise': 0.0, 'neutral': 0.62}}]
     
     # convert for face recognition
     # frameScaled_rgb = frameScaled[:, :, ::-1]
@@ -281,9 +287,10 @@ while (True):
             face_name = known_face_names[first_match_index]
         else:
             face_name = "未知-" + str(unknown_face_counter)
-            # known_face_encodings.append(detected_face_encodings[idx])
-            # known_face_names.append(face_name)
+            known_face_encodings.append(detected_face_encodings[idx])
+            known_face_names.append(face_name)
             unknown_face_counter += 1
+            known_face_blinkdrowy_status.append(BlinkDrowyCheck(spf=spf))
 
 
         # print(name)
@@ -332,12 +339,16 @@ while (True):
     # list_of_emotions, probab = emotion_detector.detect_emotion(faces)
     # print(list_of_emotions)
 
-    drowsy_array = []
-    [drowsy_array.append(blinkcheck.drowsy) for blinkcheck in known_face_blinkdrowy_status]
-    print(drowsy_array)
+    # drowsy_array = []
+    # [drowsy_array.append(blinkcheck.drowsy) for blinkcheck in known_face_blinkdrowy_status]
+    # print(drowsy_array)
 
     # Display the resulting frame
     cv2.imshow('frame', frame)
+    FRAMES_COUNTS += 1
+
+    if FRAMES_COUNTS >=1000:
+        FRAMES_COUNTS = 0
 
     # print(known_face_names)
 
