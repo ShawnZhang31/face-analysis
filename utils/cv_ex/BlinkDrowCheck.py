@@ -6,25 +6,38 @@ import numpy as np
 from abc import ABC
 
 class BlinkDrowyCheck(ABC):
-    def __init__(self, spf:float = 1.0, blinkCount:int = 0, drowsy:int = 0, state:int = 0, blinkTime:float = 0.2, drowsyTime:float = 1.0, eyeClosedThresh:float = 0.33, leftEyeIndex = [36, 37, 38, 39, 40, 41], rightEyeIndex = [42, 43, 44, 45, 46, 47]):
+    def __init__(self, spf:float, blinkTime:float = 0.2, drowsyTime:float = 1.0, eyeClosedThresh:float = 0.33, leftEyeIndex = [36, 37, 38, 39, 40, 41], rightEyeIndex = [42, 43, 44, 45, 46, 47]):
         """
-        docstring
+        check blink and drowy using the landmarks of face. When the drowy status is checked, self.drowsy will be 1, else will be 0.
+        Args:
+            spf (float): seconds per frame, using for calculating blink time and drowy time on different computer because that the different comptuer has different computer performances. So we must convert the blink time and drowy time to frames.
+            blinkTime (float): the duration time of blink. Default is 0.2s
+            drowsyTime: (float): the duration time of drowy. Default is 1.0s
+            eyeClosedThresh (float): the threshold for judging that the eye is open or closed. Default is 0.33
+            leftEyeIndex (array): the landmarks of lef eye. Default is the 68 points shape of dlib. Default is [36, 37, 38, 39, 40, 41]
+            rightEyeIndex (array): the landmarks of right eye. Default is the 68 points shape of dlib. Default is [42, 43, 44, 45, 46, 47]
         """
-        self.spf = spf
-        self.blinkCount = blinkCount
-        self.drowsy = drowsy
-        self.state = state
-        self.blinkTime = blinkTime
-        self.drowsyTime = drowsyTime
-        self.falseBlinkLimit = self.blinkTime/self.spf
-        self.drowsyLimit = self.drowsyTime/self.spf
-        self.eyeClosedThresh = eyeClosedThresh
-        self.leftEyeIndex = leftEyeIndex
-        self.rightEyeIndex = rightEyeIndex
+        self.spf = spf      # seconds per frame
+        self.blinkCount = 0     # count the number of blinks
+        self.drowsy = 0         # is drowy or not, 1->drowsy, 0-> not drowsy
+        self.state = 0          # the finite state machine for judging is drowsy or not
+        self.blinkTime = blinkTime      # the duration time of blink
+        self.drowsyTime = drowsyTime    # the duration time of blink
+        self.falseBlinkLimit = self.blinkTime/self.spf      # convert the duration time of blink to blink frames, if bigger than this value is blink, or is not
+        self.drowsyLimit = self.drowsyTime/self.spf         # convert the duration time of drowsy to drowsy frames, if bigger than thie value is drowsy, or is not
+        self.eyeClosedThresh = eyeClosedThresh      # the threshold for judging that the eye is open or closed, when the eye is open that the value will be lager than eyeClosedThresh, vice versa
+        self.leftEyeIndex = leftEyeIndex    # the landmarks of lef eye. Default is the 68 points shape of dlib
+        self.rightEyeIndex = rightEyeIndex      # the landmarks of right eye. Default is the 68 points shape of dlib
     
     def checkEyeStatus(self, frame, landmarks, eyeClosedThresh:float = 0.33):
         """
-        docstring
+        check the status of eyes
+        Args:
+            frame: the detected image. Generate mask using the detected image.
+            landmarks: the face landmarks of the detected face
+            eyeClosedThresh (float): the threshold for judging that the eye is open or closed. Default is 0.33
+        Returns:
+            return the status of the eye. 1 -> opened, 0 -> closed
         """
         # create a black image to be used as mask for the eyes
         mask = np.zeros(frame.shape[:2], dtype=np.float32)
@@ -95,7 +108,7 @@ class BlinkDrowyCheck(ABC):
 
     def check(self, frame, landmarks):
         """
-        docstring
+        check the face is drowsy or not.
         """
         eyeStatus = self.checkEyeStatus(frame, landmarks, eyeClosedThresh= self.eyeClosedThresh)
         self.checkBlinkStatus(eyeStatus)
