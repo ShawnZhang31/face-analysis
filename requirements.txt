@@ -9,3 +9,4 @@ sphinx-rtd-theme
 scikit-learn
 scikit-image
 Pillow
+face_recognition
