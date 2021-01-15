@@ -226,6 +226,7 @@ for face_name in known_face_names:
     blinkchecker = BlinkDrowyCheck(spf=spf, eyeClosedThresh=0.45)
     known_face_blinkdrowy_status.append(blinkchecker)
 
+
 # unknown face counter
 unknown_face_counter = 1
 
@@ -238,6 +239,7 @@ while (True):
     # Capture frame-by-frame
     ret, frame = video_capter.read()
     cv2.flip(frame, 1, frame)
+    frameCopied = np.copy(frame)
 
     
 
@@ -341,6 +343,7 @@ while (True):
 
     # Display the resulting frame
     cv2.imshow('frame', frame)
+    cv2.imshow('frame copy', frameCopied)
     FRAMES_COUNTS += 1
 
     if FRAMES_COUNTS >=1000:
