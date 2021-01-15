@@ -42,3 +42,10 @@ pip install -r requirements.txt
 ```bash
 python demo.py
 ```
+
+## TODO
+
+- [ ] Add new moudle for adding many images for enrollment faces
+- [ ] Using the Optical Flow method to stable the face box and face landmarks
+- [ ] Show all detected drowsiness face
+- [ ] Using Face Tracking instead of Face Detectiong for speed up performance
