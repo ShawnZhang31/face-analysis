@@ -109,6 +109,9 @@ class BlinkDrowyCheck(ABC):
     def check(self, frame, landmarks):
         """
         check the face is drowsy or not.
+        Args:
+            frame: the detected image. Generate mask using the detected image.
+            landmarks: the face landmarks of the detected face
         """
         eyeStatus = self.checkEyeStatus(frame, landmarks, eyeClosedThresh= self.eyeClosedThresh)
         self.checkBlinkStatus(eyeStatus)

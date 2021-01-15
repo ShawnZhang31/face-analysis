@@ -2,16 +2,12 @@ from ast import dump
 import os
 import sys
 import time
-from face_recognition.api import face_encodings, face_locations
 import numpy as np
 import cv2
 import dlib
 # import facelib
 import argparse
 import operator
-import time
-
-from numpy.lib.type_check import imag
 
 from utils import cv_ex
 from utils.cv_ex import BlinkDrowyCheck
@@ -227,7 +223,7 @@ print("Current SPF (seconds per frame) is {:.2f} ms".format(spf*1000))
 # create the blinkdrowychecker array
 known_face_blinkdrowy_status = []
 for face_name in known_face_names:
-    blinkchecker = BlinkDrowyCheck(spf=spf)
+    blinkchecker = BlinkDrowyCheck(spf=spf, eyeClosedThresh=0.45)
     known_face_blinkdrowy_status.append(blinkchecker)
 
 # unknown face counter
