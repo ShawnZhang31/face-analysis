@@ -74,9 +74,10 @@ class BlinkDrowyCheck(ABC):
             eyeStatus = 0
 
         # cv2.putText(mask, str(eyeStatus), (50, 50), cv2.FONT_HERSHEY_COMPLEX, 1.0, 255)
-        # cv2.imshow("mask", mask)
+        # cv2.imshow(self.faceName, mask)
 
         return eyeStatus
+
 
     def checkBlinkStatus(self, eyeStatus):
         """

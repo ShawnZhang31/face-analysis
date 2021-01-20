@@ -55,6 +55,8 @@ emotion_detector = FER(mtcnn=True)
 print("OpenCV Version:", cv2.__version__)
 print("dlib Version:", dlib.__version__)
 
+FRAME_WIN_NAME = "Blink Drowsy"
+
 
 # retina_face_model = "./models/mobilenet0.25_Final.pth"
 # age_gender_model = "./models/ShufflenetFull.pth"
@@ -172,9 +174,9 @@ for i in range(100):
     text_org = (30, 30)
     sub_prex = "." * (frameCounter % 6 + 1)
     frame =  drawUnicodeText(frame, "等待摄像头自动调整"+sub_prex, text_org)
-    cv2.imshow("Initializing", frame)
+    cv2.imshow(FRAME_WIN_NAME, frame)
     cv2.waitKey(1)
-cv2.destroyWindow("Initializing")
+# cv2.destroyWindow("Initializing")
 
 # calculating the params about the computer
 totalTime = 0.0
@@ -207,11 +209,11 @@ while (validFrames < dummyFrames):
     text_org = (30, 30)
     # sub_prex = "." * (frameCounter % 6 + 1)
     frame =  drawUnicodeText(frame, "正在统计计算机算力性能{}%".format(int((validFrames/dummyFrames)*100)), text_org, color=(0, 255, 255, 0))
-    cv2.imshow("Initializing", frame)
+    cv2.imshow(FRAME_WIN_NAME, frame)
     if cv2.waitKey(1) & 0xFF == 27:
             sys.exit()
 
-cv2.destroyWindow("Initializing")
+# cv2.destroyWindow("Initializing")
 
 spf = totalTime/dummyFrames
 print("Current SPF (seconds per frame) is {:.2f} ms".format(spf*1000))
@@ -223,7 +225,7 @@ print("Current SPF (seconds per frame) is {:.2f} ms".format(spf*1000))
 # create the blinkdrowychecker array
 known_face_blinkdrowy_status = []
 for face_name in known_face_names:
-    blinkchecker = BlinkDrowyCheck(spf=spf, eyeClosedThresh=0.45)
+    blinkchecker = BlinkDrowyCheck(spf=spf, eyeClosedThresh=0.4)
     known_face_blinkdrowy_status.append(blinkchecker)
 
 # unknown face counter
@@ -340,7 +342,7 @@ while (True):
     # print(drowsy_array)
 
     # Display the resulting frame
-    cv2.imshow('frame', frame)
+    cv2.imshow(FRAME_WIN_NAME, frame)
     FRAMES_COUNTS += 1
 
     if FRAMES_COUNTS >=1000:
